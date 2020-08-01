@@ -4,6 +4,17 @@ import "./SafeMath.sol";
 import "./fxs.sol";
 import "./frax.sol";
 
+contract fxs_test {
+    FRAXShares FXS;
+    FRAXStablecoin FRAX;
+    
+    function fxs_testt(uint256 fxs_a) public {
+        FXS.burnFrom(msg.sender, fxs_a);
+    }
+    
+}
+
+
 contract frax_pool {
     ERC20 collateral_token;
     //address collateral_address; //unused
@@ -52,8 +63,9 @@ contract frax_pool {
     }
     
 
+
     
-    function mintFrax(uint256 collateral_amount, uint256 FXS_amount) public payable {
+    function mintFRAX(uint256 collateral_amount, uint256 FXS_amount) public payable {
         //since solidity truncates division, every divsion operation must be the last operation in the equation to ensure minimum error
         
         uint256 fxs_needed;
@@ -63,40 +75,38 @@ contract frax_pool {
         if(FRAX.global_collateral_ratio() == 0){ //check here or else calculating c_amount throws dividebyzero error
             FXS.transferFrom(msg.sender, address(this), FXS_amount);
             FRAX.pool_mint(msg.sender, FXS_amount);
-            FXS.burn(FXS_amount);
+            FXS.burnFrom(msg.sender, FXS_amount);
             return;
         }
         
-        uint fxs_price = FRAX.FXS_price();
-        uint col_price = collateral_price_int;
-        uint col_ratio = FRAX.global_collateral_ratio();
+        uint256 fxs_price = FRAX.FXS_price();
+        uint256 col_price = collateral_price_int;
+        uint256 col_ratio = FRAX.global_collateral_ratio();
         
         uint256 c_amount = (collateral_amount * col_price) / col_ratio; //replace with safemath .div()
         uint256 f_amount = (FXS_amount * fxs_price) / (1e6 - col_ratio); //fxs_price has 6 extra precision, col_ratio also has 6 extra precision; replace with safemath .div()
         
+        
         if (c_amount < f_amount) {
             collateral_token.transferFrom(msg.sender, address(this), collateral_amount);
             fxs_needed = (c_amount * (1e6 - col_ratio)) / 1e6;
-            FXS.transferFrom(msg.sender, address(this), fxs_needed);
             FRAX.pool_mint(msg.sender, collateral_amount);
-            FXS.burn(fxs_needed);
+            FXS.burnFrom(msg.sender, fxs_needed);
         }
         
         else {
             collateral_needed = (f_amount * col_ratio) / 1e6;
             collateral_token.transferFrom(msg.sender, address(this), collateral_needed);
-            FXS.transferFrom(msg.sender, address(this), FXS_amount);
             FRAX.pool_mint(msg.sender, f_amount); 
-            FXS.burn(FXS_amount);
+            FXS.burnFrom(msg.sender, FXS_amount);
         }
     }
 
-    function redeemFrax(uint256 FRAX_amount) public payable {
+    function redeemFRAX(uint256 FRAX_amount) public payable {
         uint col_ratio = FRAX.global_collateral_ratio();
-        FRAX.transferFrom(msg.sender, address(this), FRAX_amount);
         collateral_token.transferFrom(address(this), msg.sender, (FRAX_amount * (1e6 - col_ratio)) / 1e6); 
         FXS.pool_mint(tx.origin, (FRAX_amount * (1e6 - col_ratio)) / 1e6);
-        FRAX.burn(FRAX_amount);
+        FRAX.burnFrom(msg.sender, FRAX_amount);
     }
 
     
