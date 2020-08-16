@@ -37,6 +37,12 @@ contract FRAXStablecoin is ERC20 {
     uint256 public redemption_fee;
     uint256 public minting_fee;
     
+    uint256 FRAX_amount;
+    uint256 FXS_amount;
+
+    
+    FRAXShares FXS;
+    
     ERC20 collateral_token;
 
 
@@ -92,9 +98,21 @@ contract FRAXStablecoin is ERC20 {
     // this is to prevent accidental mispricings 
     // a change of greater than 10% requires multiple transactions
     //need to create this logic
+    
+    //whenever the oracle sets the price, the historical amount of FRAX and FXS should be logged in plaintext
+    event mintFRAX(uint256 FRAX_amount, uint256 FXS_amount);
     function setPrices(uint256 FRAX_p,uint256 FXS_p) public onlyByOracle {
+
+        FRAX_amount = totalSupply();
+        FXS_amount = FXS.totalSupply();
+        
         FRAX_price = FRAX_p;
         FXS_price = FXS_p;
+        emit mintFRAX(FRAX_amount, FXS_amount); 
+    }
+    
+    function setFXSAddress(address FXS_contract_address) public onlyByOracle {
+        FXS = FRAXShares(FXS_contract_address);
     }
     
     function setGlobalCollateralRatio(uint256 coll_ra) public onlyByOracle {
@@ -108,6 +126,10 @@ contract FRAXStablecoin is ERC20 {
 
     function setRedemptionFee(uint256 red_fee) public onlyByOracle {
         redemption_fee = red_fee;
+    }
+
+    function setMintingFee(uint256 mint_fee) public onlyByOracle {
+        minting_fee = mint_fee;
     }
 
     
