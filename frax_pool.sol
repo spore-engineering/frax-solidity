@@ -4,15 +4,6 @@ import "./SafeMath.sol";
 import "./fxs.sol";
 import "./frax.sol";
 
-contract fxs_test {
-    FRAXShares FXS;
-    FRAXStablecoin FRAX;
-    
-    function fxs_testt(uint256 fxs_a) public {
-        FXS.burnFrom(msg.sender, fxs_a);
-    }
-    
-}
 
 
 contract frax_pool {
@@ -62,10 +53,19 @@ contract frax_pool {
         collateral_price_int = c_price;
     }
     
+    //we separate out the 1t1, fractional and algorithmic minting functions for gas effeciency 
 
+    function mint1t1FRAX(uint256 collateral_amount) public payable {
+        
+    }
+
+
+    function mintAlgorithmicFRAX(uint256 fxs_amount) public payable {
+        
+    }
 
     
-    function mintFRAX(uint256 collateral_amount, uint256 FXS_amount) public payable {
+    function mintFractionalFRAX(uint256 collateral_amount, uint256 FXS_amount) public payable {
         //since solidity truncates division, every divsion operation must be the last operation in the equation to ensure minimum error
         
         uint256 fxs_needed;
