@@ -11,13 +11,14 @@ contract FRAXShares is ERC20 {
     string public symbol;
     uint8 public decimals = 18;
     address public FRAXStablecoinAdd;
-//    address[] public owners;
+    
     uint256 genesis_supply;
-//    uint256 ownerCount; //number of different addresses that hold FXS
-//    mapping(address => uint256) public balances;
-//    mapping(address => mapping (address => uint256)) allowed;
+    uint256 maximum_supply; //no FXS can be minted under any condition past this number
+
     address owner_address;
-    mapping(address => bool) public frax_pools; 
+    
+    mapping(address => bool) public frax_pools; //same mapping and variable in FRAXStablecoin 
+    
     address oracle_address;
     
     FRAXStablecoin FRAX;
@@ -25,12 +26,14 @@ contract FRAXShares is ERC20 {
     constructor(
     string memory _symbol, 
     uint256 _genesis_supply,
+    uint256 _maximum_supply,
     address _owner_address)
     
     public 
     {
     symbol = _symbol;
     genesis_supply = _genesis_supply;
+    maximum_supply = _maximum_supply; 
     owner_address = _owner_address;
     
     _mint(owner_address, genesis_supply);
@@ -46,13 +49,14 @@ contract FRAXShares is ERC20 {
         FRAX = FRAXStablecoin(frax_contract_address);
     }
 
-function mint(address to, uint256 amount) public {
-        require(msg.sender == FRAXStablecoinAdd);
+    function mint(address to, uint256 amount) public {
+        require(frax_pools[msg.sender] == true);
         _mint(to, amount);
     }
+    
 
     modifier onlyPools() {
-       require(frax_pools[msg.sender] = true, "only frax pools can mint new FRAX");
+       require(frax_pools[msg.sender] == true, "only frax pools can mint new FRAX");
         _;
     } 
     
