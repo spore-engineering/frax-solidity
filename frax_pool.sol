@@ -8,14 +8,11 @@ import "./frax.sol";
 
 contract frax_pool {
     ERC20 collateral_token;
-    //address collateral_address; //unused
-    //address fxs_address; //unused
-    //address frax_address; //unused
-    //address frax_pool_address; //unused
     address pool_oracle;
     FRAXShares FXS;
     FRAXStablecoin FRAX;
     uint256 collateral_price_int; //6 decimals of precision, e.g. 1023000 represents $1.023
+    
     //pool_ceiling is the total amount of collateral that a pool contract can hold
     uint256 pool_ceiling;
     
@@ -54,34 +51,32 @@ contract frax_pool {
     }
     
     //we separate out the 1t1, fractional and algorithmic minting functions for gas effeciency 
-
-    function mint1t1FRAX(uint256 collateral_amount) public payable {
+    function mint1t1FRAX(uint256 collateral_amount) public {
+        require(FRAX.global_collateral_ratio() == 1, "FRAX isn't 100% collateralized");
+        uint256 col_price = collateral_price_int;
+        uint256 c_amount = (collateral_amount * col_price); //replace with safemath .div()
+        collateral_token.transferFrom(msg.sender, address(this), collateral_amount);
+        FRAX.pool_mint(msg.sender, c_amount);
         
     }
 
-
     function mintAlgorithmicFRAX(uint256 fxs_amount) public payable {
-        
+        require(FRAX.global_collateral_ratio() == 0, "FRAX isn't 100% collateralized");
+        uint256 fxs_price = FRAX.FXS_price();
+        uint256 f_amount = (FXS_amount * fxs_price);
+        FXS.burnFrom(msg.sender, fxs_amount);
+        FRAX.pool_mint(msg.sender, f_amount);
     }
 
     
-    function mintFractionalFRAX(uint256 collateral_amount, uint256 FXS_amount) public payable {
+    function mintFractionalFRAX(uint256 collateral_amount, uint256 FXS_amount) public {
         //since solidity truncates division, every divsion operation must be the last operation in the equation to ensure minimum error
-        
+        //the contract must check the proper ratio was sent to mint FRAX. We do this by seeing the minimum mintable FRAX based on each amount 
         uint256 fxs_needed;
         uint256 collateral_needed;
-        
-        //if fully decollateralized
-        if(FRAX.global_collateral_ratio() == 0){ //check here or else calculating c_amount throws dividebyzero error
-            FXS.transferFrom(msg.sender, address(this), FXS_amount);
-            FRAX.pool_mint(msg.sender, FXS_amount);
-            FXS.burnFrom(msg.sender, FXS_amount);
-            return;
-        }
-        
         uint256 fxs_price = FRAX.FXS_price();
-        uint256 col_price = collateral_price_int;
         uint256 col_ratio = FRAX.global_collateral_ratio();
+        uint256 col_price = collateral_price_int;
         
         uint256 c_amount = (collateral_amount * col_price) / col_ratio; //replace with safemath .div()
         uint256 f_amount = (FXS_amount * fxs_price) / (1e6 - col_ratio); //fxs_price has 6 extra precision, col_ratio also has 6 extra precision; replace with safemath .div()
