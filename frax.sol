@@ -13,11 +13,7 @@ contract FRAXStablecoin is ERC20 {
     string public symbol;
     uint8 public decimals = 18;
     address[] public owners;
-    uint256 ownerCount; //number of different addresses that hold FRAX
-    mapping(address => uint256) public balances;
 
-    
-    //an array of frax pool addresses for future use
     //the addresses in this array are added by the oracle and these contracts are able to mint frax
     address[] frax_pools_array;
 
@@ -25,7 +21,8 @@ contract FRAXStablecoin is ERC20 {
     mapping(address => bool) public frax_pools; 
     
     mapping(address => uint256) public pool_prices;
-    //add frax hop and backstep contracts here and other future monetary policy contracts 
+    
+    //add other future monetary policy contracts to this
     mapping(address => bool) public frax_monetary_policy_contracts;
 
     
@@ -33,26 +30,17 @@ contract FRAXStablecoin is ERC20 {
     uint256 public FRAX_price; //6 decimals of precision
     uint256 public FXS_price; //6 decimals of precision
     uint256 public global_collateral_ratio; //6 decimals of precision, e.g. 924102 = 0.924102
-    address oracle_address; //this is the address that can change the FRAX and FXS price
+    address oracle_address; 
     uint256 public redemption_fee;
     uint256 public minting_fee;
-    
-    uint256 FRAX_amount;
-    uint256 FXS_amount;
-
-    
-    FRAXShares FXS;
-    
-    ERC20 collateral_token;
-
 
     modifier onlyMonPol() {
-       require(frax_monetary_policy_contracts[msg.sender] = true, "only frax expansion-retraction contracts can use this!");
+       require(frax_monetary_policy_contracts[msg.sender] == true, "only frax expansion-retraction contracts can use this!");
         _;
     } 
      
     modifier onlyPools() {
-       require(frax_pools[msg.sender] = true, "only frax pools can mint new FRAX");
+       require(frax_pools[msg.sender] == true, "only frax pools can mint new FRAX");
         _;
     } 
     
@@ -72,7 +60,7 @@ contract FRAXStablecoin is ERC20 {
 }
 
     //public implementation of internal _mint()
-    function mint(uint256 amount) public virtual onlyMonPol {
+    function mint(uint256 amount) public virtual onlyByOracle {
         _mint(msg.sender, amount);
     }
 
@@ -93,30 +81,17 @@ contract FRAXStablecoin is ERC20 {
     }
 
 
+    //When an oracle contract is deployed in the future,  
+    // the updated price must be within 10% of the old price as reported by the contract, this is to prevent accidental mispricings, a change of greater than 10% requires multiple transactions
+    //this logic is done by the offchain oracle in v1 for simplicity
 
-    // the updated price must be within 10% of the old price
-    // this is to prevent accidental mispricings 
-    // a change of greater than 10% requires multiple transactions
-    //need to create this logic
-    
-    //whenever the oracle sets the price, the historical amount of FRAX and FXS should be logged in plaintext
-    event mintFRAX(uint256 FRAX_amount, uint256 FXS_amount);
     function setPrices(uint256 FRAX_p,uint256 FXS_p) public onlyByOracle {
-
-        FRAX_amount = totalSupply();
-        FXS_amount = FXS.totalSupply();
-        
         FRAX_price = FRAX_p;
         FXS_price = FXS_p;
-        emit mintFRAX(FRAX_amount, FXS_amount); 
-    }
-    
-    function setFXSAddress(address FXS_contract_address) public onlyByOracle {
-        FXS = FRAXShares(FXS_contract_address);
     }
     
     function setGlobalCollateralRatio(uint256 coll_ra) public onlyByOracle {
-        require(coll_ra < 1000000, "collateral ratio must have 6 decimals of precision and never go above 0.999999");
+        require(coll_ra < 1000001, "collateral ratio must have 6 decimals of precision and never go above 1.0000000");
         global_collateral_ratio = coll_ra;
     }
 
@@ -128,16 +103,9 @@ contract FRAXStablecoin is ERC20 {
         redemption_fee = red_fee;
     }
 
-    function setMintingFee(uint256 mint_fee) public onlyByOracle {
-        minting_fee = mint_fee;
-    }
-
-    
-    function n_collateral_ratio() public view returns (uint256) {
-        return  collateral_token.balanceOf(address(this)).div(totalSupply());
-        
-    }
-    
+     function setMintingFee(uint256 min_fee) public onlyByOracle {
+        minting_fee = min_fee;
+    }  
     
     
     //this function is what other frax pools will call to mint new FRAX 
