@@ -6,6 +6,8 @@ import "./frax.sol";
 import "./SafeMath.sol";
 
 
+
+
 contract FRAXShares is ERC20 {
     using SafeMath for uint256;
     string public symbol;
@@ -14,6 +16,7 @@ contract FRAXShares is ERC20 {
     
     uint256 genesis_supply;
     uint256 maximum_supply; //no FXS can be minted under any condition past this number
+    uint256 FXS_DAO_min; //minimum FXS required to join DAO groups 
 
     address owner_address;
     
@@ -27,6 +30,7 @@ contract FRAXShares is ERC20 {
     string memory _symbol, 
     uint256 _genesis_supply,
     uint256 _maximum_supply,
+    address _oracle_address,
     address _owner_address)
     
     public 
@@ -35,6 +39,7 @@ contract FRAXShares is ERC20 {
     genesis_supply = _genesis_supply;
     maximum_supply = _maximum_supply; 
     owner_address = _owner_address;
+    oracle_address = _oracle_address;
     
     _mint(owner_address, genesis_supply);
 
@@ -48,9 +53,13 @@ contract FRAXShares is ERC20 {
     function setFRAXAddress(address frax_contract_address) public onlyByOracle {
         FRAX = FRAXStablecoin(frax_contract_address);
     }
+    
+    function setFXSMinDAO(uint256 min_FXS) public onlyByOracle {
+        FXS_DAO_min = min_FXS;
+    }
 
-    function mint(address to, uint256 amount) public {
-        require(frax_pools[msg.sender] == true);
+    function mint(address to, uint256 amount) public onlyPools {
+        require(totalSupply() + amount < maximum_supply, "no more FXS can be minted, max supply reached");
         _mint(to, amount);
     }
     
@@ -67,6 +76,7 @@ contract FRAXShares is ERC20 {
     
     //this function is what other frax pools will call to mint new FXS (similar to the FRAX mint) 
     function pool_mint(address m_address, uint256 m_amount) public onlyPools {
+        require(totalSupply() + m_amount < maximum_supply, "no more FXS can be minted, max supply reached");
         super._mint(m_address, m_amount);
     }
     
