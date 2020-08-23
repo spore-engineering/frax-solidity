@@ -15,8 +15,8 @@ contract FRAXShares is ERC20 {
     address public FRAXStablecoinAdd;
     
     uint256 genesis_supply;
-    uint256 maximum_supply; //no FXS can be minted under any condition past this number
-    uint256 FXS_DAO_min; //minimum FXS required to join DAO groups 
+    uint256 public maximum_supply; //no FXS can be minted under any condition past this number
+    uint256 public FXS_DAO_min; //minimum FXS required to join DAO groups 
 
     address owner_address;
     
