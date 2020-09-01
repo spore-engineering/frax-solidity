@@ -137,10 +137,10 @@ contract frax_pool {
         uint256 tot_collat_value =  FRAX.globalCollateralValue();
         //calculate how much FRAX actually needs to be backed by collateral at current collat ratio 
         uint256 backed_FRAX_value = FRAX.totalSupply() * FRAX.global_collateral_ratio().div(1e6);
-    //if the total collateral value is higher than the amount required at the current collateral ratio then buy back up to the possible FXS with the desired collateral
-    if (tot_collat_value > backed_FRAX_value) {
-        uint256 possible_buyBack_value = tot_collat_value - backed_FRAX_value;
         uint256 fxs_value = FXS_amount * FRAX.FXS_price();
+        uint256 possible_buyBack_value = tot_collat_value - backed_FRAX_value;
+    //if the total collateral value is higher than the amount required at the current collateral ratio then buy back up to the possible FXS with the desired collateral
+    if (tot_collat_value > backed_FRAX_value && possible_buyBack_value > fxs_value) {
         collateral_token.transferFrom(address(this), msg.sender, (possible_buyBack_value - fxs_value));
         FXS.burnFrom(msg.sender, FXS_amount);
         
