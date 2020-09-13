@@ -30,7 +30,9 @@ contract frax_pool {
         _;
     }
  
-
+    function collateralSupply() public view returns (uint256 amount){
+        return uint256(collateral_token.balanceOf(address(this)));
+    }
     
     function setPoolCeiling(uint256 new_ceiling) public onlyByOracle {
         pool_ceiling = new_ceiling;
